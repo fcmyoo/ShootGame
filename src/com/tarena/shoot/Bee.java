@@ -33,4 +33,9 @@ public class Bee extends FlayingObject implements Award {
             xSpeed = 1;
         }
     }
+
+    @Override
+    public boolean outOfBounds() {
+        return this.y >= ShootGames.HEIGHT;
+    }
 }

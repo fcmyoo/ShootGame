@@ -1,5 +1,7 @@
 package com.tarena.shoot;
 
+import java.awt.event.MouseAdapter;
+import java.awt.event.MouseEvent;
 import java.awt.image.BufferedImage;
 import javax.imageio.ImageIO;
 import javax.swing.JFrame;
@@ -91,52 +93,134 @@ public class ShootGames extends JPanel {
 
     }
 
-    int flyEnteredIndex =0;
+    int flyEnteredIndex = 0;
+
     public void enterAction() {
         flyEnteredIndex++;
         if (flyEnteredIndex % 40 == 0) {
             FlayingObject one = nextOne();
             flyings = Arrays.copyOf(flyings, flyings.length + 1);
-            flyings[flyings.length-1] = one;
+            flyings[flyings.length - 1] = one;
         }
     }
 
     //飞行物行走
     public void stepAction() {
         hero.step();
-        for (int i =0;i<flyings.length;i++) {
+        for (int i = 0; i < flyings.length; i++) {
             flyings[i].step();
         }
-        for (int i =0;i<bullets.length;i++) {
+        for (int i = 0; i < bullets.length; i++) {
             bullets[i].step();
         }
     }
-    int shootIndex=0;
+
+    int shootIndex = 0;
+
     public void shootAction() {
         shootIndex++;
         if (shootIndex % 30 == 0) {
             //创建子弹对象
             Bullet[] bs = hero.shoot();
-            bullets = Arrays.copyOf(bullets,bullets.length+bs.length);
+            bullets = Arrays.copyOf(bullets, bullets.length + bs.length);
             //数组追加
-            System.arraycopy(bs,0,bullets,bullets.length-bs.length,bs.length);
+            System.arraycopy(bs, 0, bullets, bullets.length - bs.length, bs.length);
         }
     }
+
+    //    删除越界的对象包括小蜜蜂,敌机
+    private void outOfBoundsAction() {
+        int index = 0;
+        FlayingObject[] flayingLives = new FlayingObject[flyings.length];
+        for (int i = 0; i < flyings.length; i++) {
+            FlayingObject flay = flyings[i];
+            if (!flay.outOfBounds()) {
+                flayingLives[index] = flay;
+                index++;
+            }
+        }
+        flyings = Arrays.copyOf(flayingLives, index);
+        int bIndex = 0;
+        Bullet[] bulletLives = new Bullet[bullets.length];
+        for (int i = 0; i < bullets.length; i++) {
+            Bullet b = bullets[i];
+            if (!b.outOfBounds()) {
+                bulletLives[bIndex] = b;
+                bIndex++;
+            }
+        }
+        bullets = Arrays.copyOf(bulletLives, bIndex);
+    }
+
+    //子弹与敌人的碰撞
+    private void bangAction() {
+        for (int i = 0; i < bullets.length; i++) {
+            Bullet b = bullets[i];
+            bang(b);
+        }
+    }
+
+    int score = 0;//得分
+
+    private void bang(Bullet b) {
+        int index = -1;
+        for (int i = 0; i < flyings.length; i++) {
+            FlayingObject flying = flyings[i];
+            if (flying.shootBy(b)) {
+                index = i;
+                break;
+            }
+        }
+        if (index != -1) {
+            FlayingObject one = flyings[index];//获取被撞敌人
+            if (one instanceof Enemy) {//敌人
+                Enemy e = (Enemy) one;//强转
+                score += e.getScore();//得分
+            }
+            if (one instanceof Award) {//奖励
+                Award a = (Award) one;//强转
+                int type = a.getType();//获取类型
+                switch (type) {
+                    case Award.DOUBLE_FIRE:
+                        hero.addDoubleFire();
+                        break;
+                    case Award.LIFE:
+                        hero.addLife();
+                        break;
+                }
+            }
+        }
+
+    }
+
     //启动程序执行
-    public void action() {
+    private void action() {
+        MouseAdapter l = new MouseAdapter() {
+            @Override
+            public void mouseMoved(MouseEvent e) {
+                hero.moveTo(e.getX(), e.getY());
+            }
+        };
+        this.addMouseListener(l);
+        this.addMouseMotionListener(l);
         Timer timer = new Timer();
-        int intervel = 10 ; //时间间隔,毫秒为单位
+        int intervel = 10; //时间间隔,毫秒为单位
         timer.schedule(new TimerTask() {
             @Override
             public void run() {
+                outOfBoundsAction();
                 enterAction();//敌人
                 stepAction();//飞行物
                 shootAction();//子弹
+                bangAction();
                 repaint();//重画
+//                System.out.println("飞机个数:"+flyings.length);
+//                System.out.println("子弹个数:"+bullets.length);
             }
+
+
         }, intervel, intervel);
     }
-
 
 
     public static void main(String[] args) {
@@ -151,11 +235,6 @@ public class ShootGames extends JPanel {
 
         game.action();//启动程序执行
     }
-
-
-
-
-
 
 }
 

@@ -25,4 +25,9 @@ public class Airplane extends FlayingObject implements Enemy {
     public void step() {
         y+=speed;
     }
+
+    @Override
+    public boolean outOfBounds() {
+        return this.y >= ShootGames.HEIGHT;
+    }
 }

@@ -18,4 +18,9 @@ public class Bullet extends FlayingObject {
     public void step() {
         y-=speed;
     }
+
+    @Override
+    public boolean outOfBounds() {
+        return this.y<=-this.height;
+    }
 }
